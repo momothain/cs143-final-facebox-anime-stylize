@@ -4,43 +4,43 @@ import dlib
 import cv2
 
 
- 
 def NN = 0
 def CNN = 0
- 
+
 # read image
 # detect face(s) using NN
 # create bounding box(es) using top/left/right/bot-most values
 # run stylization on just face boxes
 # cut and paste the stylized faces into the original target image
- 
-#pre-process?
+
+# pre-process?
+
+
 def get_im(image_path):
    image = imread(image_path, as_gray=False)
    image = np.flatten(image)
    return image
- 
+
+
 def get_faces(image):
    faces = NN(image)
    # learn how this is represented from paper
-   #convert to 2d array?
+   # convert to 2d array?
    return faces
- 
- 
+
+
 def bound_box(face):
     detector = dlib.get_frontal_face_detector()
     img = cv2.imread('test.jpg')
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    faces = detector(gray, 1) # result
-    #to draw faces on image
+    faces = detector(gray, 1)  # result
+    # to draw faces on image
     for result in faces:
         x = result.left()
         y = result.top()
         x1 = result.right()
         y1 = result.bottom()
         cv2.rectangle(img, (x, y), (x1, y1), (0, 0, 255), 2)
-
-
 
    top = Positive_Infinity
    bot = Negative_Infinity

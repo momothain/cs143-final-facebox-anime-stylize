@@ -1,5 +1,4 @@
 import cv2
-import dlib
 from mtcnn.mtcnn import MTCNN
 import numpy as np
 from cv2 import waitKey
@@ -56,4 +55,4 @@ while(True):
         break
 
 cap.release()
-cv2.destroyAllWindows()
+destroyAllWindows()

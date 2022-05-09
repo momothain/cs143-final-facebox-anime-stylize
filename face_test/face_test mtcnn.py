@@ -7,7 +7,7 @@ import os
 detector = MTCNN()
 img = cv2.imread('cs143-final-facebox-anime-stylize/face_test/aot.jpg')
 faces = detector.detect_faces(img)  # result
-directory = r'C:/Users/lizak\Desktop\Brown\Spring 2022/CSCI 1430/cs143-final-facebox-anime-stylize/face_test/results'
+directory = r'cs143-final-facebox-anime-stylize/face_test/results'
 os.chdir(directory)
 # to draw faces on image
 for result in faces:

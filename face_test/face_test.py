@@ -9,7 +9,7 @@ modelFile = "cs143-final-facebox-anime-stylize/face_test/res10_300x300_ssd_iter_
 configFile = "cs143-final-facebox-anime-stylize/face_test\deploy.prototxt"
 net = cv2.dnn.readNetFromCaffe(configFile, modelFile)  # readNetFromCaffe
 im = cv2.imread('cs143-final-facebox-anime-stylize/face_test/aot.jpg')
-directory = r'C:/Users/lizak\Desktop\Brown\Spring 2022/CSCI 1430/cs143-final-facebox-anime-stylize/face_test/results'
+directory = r'cs143-final-facebox-anime-stylize/face_test/results'
 os.chdir(directory)
 h, w = im.shape[:2]
 blob = cv2.dnn.blobFromImage(cv2.resize(im, (300, 300)), 1.0,

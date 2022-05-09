@@ -5,7 +5,7 @@ from cv2 import destroyAllWindows
 import os
 
 detector = MTCNN()
-img = cv2.imread('cs143-final-facebox-anime-stylize/face_test/test2.jpg')
+img = cv2.imread('cs143-final-facebox-anime-stylize/face_test/aot.jpg')
 faces = detector.detect_faces(img)  # result
 directory = r'C:/Users/lizak\Desktop\Brown\Spring 2022/CSCI 1430/cs143-final-facebox-anime-stylize/face_test/results'
 os.chdir(directory)
@@ -15,7 +15,7 @@ for result in faces:
     x1, y1 = x + w, y + h
     cv2.rectangle(img, (x, y), (x1, y1), (0, 0, 255), 2)
 
-filename = 'facebox_mtcnn.jpg'
+filename = 'facebox_mtcnn_aot.jpg'
 cv2.imwrite(filename, img)
 
 cv2.imshow('face_test_boxes', img)

@@ -49,11 +49,20 @@ def face_boxes(image_filepath):
 
 
 def bb_style_face(style_image, target_image, bounds):
+    # for i in range(bounds[0], bounds[1]):
+    #     for j in range(bounds[2], bounds[3]):
+    box_cut = target_image[bounds[0]:bounds[1], bounds[2]:bounds[3]]
+    styled_box = stylify(style_image, box_cut)
     new_image = target_image
-    new_image[bounds[0]:bounds[1], bounds[2]:bounds[3]] =\
-        target_image[bounds[0]:bounds[1], bounds[2]:bounds[3]]
-    styled_target = stylify(style_image, new_image)
-    return styled_target
+    new_image[bounds[0]:bounds[1], bounds[2]:bounds[3]] = styled_box
+    return new_image
+
+# def bb_style_face(style_image, target_image, bounds):
+#     new_image = target_image
+#     new_image[bounds[0]:bounds[1], bounds[2]:bounds[3]] =\
+#         target_image[bounds[0]:bounds[1], bounds[2]:bounds[3]]
+#     styled_target = stylify(style_image, new_image)
+#     return styled_target
 
 # modelFile = "cs143-final-facebox-anime-stylize/face_test/res10_300x300_ssd_iter_140000.caffemodel"
 # configFile = "cs143-final-facebox-anime-stylize/face_test\deploy.prototxt"

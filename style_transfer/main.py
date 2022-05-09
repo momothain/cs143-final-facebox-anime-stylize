@@ -23,7 +23,7 @@ def tensor_to_image(tensor):
   return PIL.Image.fromarray(tensor)
 
 content_path = "./kimk.png"
-style_path = "./diobrando.jpg"
+style_path = "./mikasa.png"
 
 def load_img(path_to_img):
   max_dim = 512
@@ -180,12 +180,25 @@ def style_content_loss(outputs):
     content_loss *= content_weight / num_content_layers
     loss = style_loss + content_loss
     return loss
-  
+
+def high_pass_x_y(image):
+  x_var = image[:, :, 1:, :] - image[:, :, :-1, :]
+  y_var = image[:, 1:, :, :] - image[:, :-1, :, :]
+
+  return x_var, y_var
+
+def total_variation_loss(image):
+  x_deltas, y_deltas = high_pass_x_y(image)
+  return tf.reduce_sum(tf.abs(x_deltas)) + tf.reduce_sum(tf.abs(y_deltas))
+
+total_variation_weight = 30
+
 @tf.function()
 def train_step(image):
   with tf.GradientTape() as tape:
     outputs = extractor(image)
     loss = style_content_loss(outputs)
+    loss += total_variation_weight * total_variation_loss(image)
 
   grad = tape.gradient(loss, image)
   opt.apply_gradients([(grad, image)])

@@ -4,6 +4,9 @@ import IPython.display as display
 
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import cv2
+from cv2 import waitKey
+from cv2 import destroyAllWindows
 mpl.rcParams['figure.figsize'] = (12, 12)
 mpl.rcParams['axes.grid'] = False
 
@@ -13,7 +16,54 @@ import time
 import time
 np.random.seed(7)
 
+def face_boxes(image_filepath):
+    # modelFile = "cs143-final-facebox-anime-stylize/face_test/res10_300x300_ssd_iter_140000.caffemodel"
+    # configFile = "cs143-final-facebox-anime-stylize/face_test\deploy.prototxt"
+    modelFile = "face_test/res10_300x300_ssd_iter_140000.caffemodel"
+    configFile = "face_test/deploy.prototxt"
+    net = cv2.dnn.readNetFromCaffe(configFile, modelFile)  # readNetFromCaffe
+    
+    im = cv2.imread(image_filepath)
+    # directory = r'C:/Users/lizak\Desktop\Brown\Spring 2022/CSCI 1430/cs143-final-facebox-anime-stylize/face_test/results'
+    # os.chdir(directory)
+    h, w = im.shape[:2]
+    blob = cv2.dnn.blobFromImage(cv2.resize(im, (300, 300)), 1.0,
+                                (300, 300), (104.0, 117.0, 123.0))
+    # ALT, from opencv: To achieve the best accuracy run the model on BGR images resized to
+    # 300x300 applying mean subtraction of values (104, 177, 123) for each blue, green and red channels correspondingly.
+    net.setInput(blob)
+    faces = net.forward()
+    face_boxes = []
+    # print(faces)
+    # to draw faces on image
+    for i in range(faces.shape[2]):
+        confidence = faces[0, 0, i, 2]
+        if confidence > 0.5:
+            box = faces[0, 0, i, 3:7] * np.array([w, h, w, h])
+            box = box.astype("int")
+            (x, y, x1, y1) = box
+            im = cv2.rectangle(im, (x, y), (x1, y1), (0, 0, 255), 2)
+            face_boxes.append(box)
 
+    print(face_boxes)
+
+    filename = 'facebox_dnn.jpg'
+    cv2.imwrite(filename, im)
+
+    cv2.imshow('face_test_boxes', im)
+    # keep the window open until we press a key
+    waitKey(0)
+    # close the window
+    destroyAllWindows()
+    return face_boxes
+  
+def bb_style_face(style_image, target_image, bounds):
+   box_cut = target_image[bounds[0]:bounds[1], bounds[2]:bounds[3]]
+   styled_box = stylize(style_image, box_cut)
+   new_image = target_image
+   new_image[bounds[0]:bounds[1], bounds[2]:bounds[3]] = styled_box
+   return new_image
+ 
 def tensor_to_image(tensor):
   tensor = tensor*255
   tensor = np.array(tensor, dtype=np.uint8)
@@ -22,8 +72,8 @@ def tensor_to_image(tensor):
     tensor = tensor[0]
   return PIL.Image.fromarray(tensor)
 
-content_path = "./kimk.png"
-style_path = "./mikasa.png"
+content_path = "./style_transfer/simuliu.jpg"
+style_path = "./style_transfer/diobrando.jpg"
 
 def load_img(path_to_img):
   max_dim = 512
@@ -49,20 +99,13 @@ def imshow(image, title=None):
   if title:
     plt.title(title)
     
+
 content_image = load_img(content_path)
 style_image = load_img(style_path)
 
-plt.subplot(1, 2, 1)
-imshow(content_image, 'Content Image')
-
-plt.subplot(1, 2, 2)
-imshow(style_image, 'Style Image')
-
-plt.show()
 
 x = tf.keras.applications.vgg19.preprocess_input(content_image*255)
 x = tf.image.resize(x, (224, 224))
-vgg = tf.keras.applications.VGG19(include_top=True, weights='imagenet')
 vgg = tf.keras.applications.VGG19(include_top=False, weights='imagenet')
 
 content_layers = ['block5_conv2'] 
@@ -90,13 +133,13 @@ style_extractor = vgg_layers(style_layers)
 style_outputs = style_extractor(style_image*255)
 
 #Look at the statistics of each layer's output
-for name, output in zip(style_layers, style_outputs):
-  print(name)
-  print("  shape: ", output.numpy().shape)
-  print("  min: ", output.numpy().min())
-  print("  max: ", output.numpy().max())
-  print("  mean: ", output.numpy().mean())
-  print()
+# for name, output in zip(style_layers, style_outputs):
+#   print(name)
+#   print("  shape: ", output.numpy().shape)
+#   print("  min: ", output.numpy().min())
+#   print("  max: ", output.numpy().max())
+#   print("  mean: ", output.numpy().mean())
+#   print()
   
 def gram_matrix(input_tensor):
   result = tf.linalg.einsum('bijc,bijd->bcd', input_tensor, input_tensor)
@@ -138,22 +181,22 @@ extractor = StyleContentModel(style_layers, content_layers)
 
 results = extractor(tf.constant(content_image))
 
-print('Styles:')
-for name, output in sorted(results['style'].items()):
-  print("  ", name)
-  print("    shape: ", output.numpy().shape)
-  print("    min: ", output.numpy().min())
-  print("    max: ", output.numpy().max())
-  print("    mean: ", output.numpy().mean())
-  print()
+# print('Styles:')
+# for name, output in sorted(results['style'].items()):
+#   print("  ", name)
+#   print("    shape: ", output.numpy().shape)
+#   print("    min: ", output.numpy().min())
+#   print("    max: ", output.numpy().max())
+#   print("    mean: ", output.numpy().mean())
+#   print()
 
-print("Contents:")
-for name, output in sorted(results['content'].items()):
-  print("  ", name)
-  print("    shape: ", output.numpy().shape)
-  print("    min: ", output.numpy().min())
-  print("    max: ", output.numpy().max())
-  print("    mean: ", output.numpy().mean())
+# print("Contents:")
+# for name, output in sorted(results['content'].items()):
+#   print("  ", name)
+#   print("    shape: ", output.numpy().shape)
+#   print("    min: ", output.numpy().min())
+#   print("    max: ", output.numpy().max())
+#   print("    mean: ", output.numpy().mean())
 
 style_targets = extractor(style_image)['style']
 content_targets = extractor(content_image)['content']
@@ -216,11 +259,25 @@ for n in range(epochs):
     train_step(image)
     print(".", end='', flush=True)
   display.clear_output(wait=True)
-  display.display(tensor_to_image(image))
   plt.imshow(tensor_to_image(image))
   plt.show()
   # imshow(tensor_to_image(image))
   print("Train step: {}".format(step))
+    
 
 end = time.time()
 print("Total time: {:.1f}".format(end-start))
+
+
+if __name__ == "main.py":
+  plt.subplot(1, 2, 1)
+  imshow(content_image, 'Content Image')
+
+  plt.subplot(1, 2, 2)
+  imshow(style_image, 'Style Image')
+  plt.show()
+  
+  bounds = face_boxes(content_path)
+  stylized_image = bb_style_face(style_image, content_image, bounds)
+  plt.imshow(tensor_to_image(stylized_image))
+  plt.show()

@@ -1,7 +1,6 @@
 import cv2
 from mtcnn.mtcnn import MTCNN
 import numpy as np
-from cv2 import waitKey
 from cv2 import destroyAllWindows
 
 detector1 = MTCNN()

@@ -15,7 +15,6 @@ import PIL.Image
 import time
 import time
 np.random.seed(7)
-
 def face_boxes(image_filepath):
     # modelFile = "cs143-final-facebox-anime-stylize/face_test/res10_300x300_ssd_iter_140000.caffemodel"
     # configFile = "cs143-final-facebox-anime-stylize/face_test\deploy.prototxt"
@@ -57,11 +56,13 @@ def face_boxes(image_filepath):
     destroyAllWindows()
     return face_boxes
   
-def bb_style_face(style_image, target_image, bounds):
-   box_cut = target_image[bounds[0]:bounds[1], bounds[2]:bounds[3]]
+def bb_style_face(style_image_path, target_image_path, bounds):
+   style_image = load_img(style_image_path)
+   target_image = cv2.imread(target_image_path)
+   box_cut = preprocess_img(target_image[bounds[0][1]:bounds[0][3], bounds[0][0]:bounds[0][2], :])
    styled_box = stylize(style_image, box_cut)
-   new_image = target_image
-   new_image[bounds[0]:bounds[1], bounds[2]:bounds[3]] = styled_box
+   new_image = np.asarray(tensor_to_image(tf.image.convert_image_dtype(cv2.imread(target_image_path), tf.float32)), dtype=np.float32)
+   new_image[bounds[0][1]:bounds[0][3], bounds[0][0]:bounds[0][2], :] = tf.image.resize(styled_box, (abs(bounds[0][1]-bounds[0][3]), abs(bounds[0][0]-bounds[0][2])))
    return new_image
  
 def tensor_to_image(tensor):
@@ -72,8 +73,19 @@ def tensor_to_image(tensor):
     tensor = tensor[0]
   return PIL.Image.fromarray(tensor)
 
-content_path = "./style_transfer/simuliu.jpg"
-style_path = "./style_transfer/diobrando.jpg"
+def preprocess_img(img):
+  img = np.copy(img)
+  max_dim = 512
+  # img = tf.image.decode_image(img, channels=3)
+  img = tf.image.convert_image_dtype(img, tf.float32)
+  shape = tf.cast(tf.shape(img)[:-1], tf.float32)
+  long_dim = max(shape)
+  scale = max_dim / long_dim
+  new_shape = tf.cast(shape * scale, tf.int32)
+
+  img = tf.image.resize(img, new_shape)
+  img = img[tf.newaxis, :]
+  return img
 
 def load_img(path_to_img):
   max_dim = 512
@@ -100,24 +112,6 @@ def imshow(image, title=None):
     plt.title(title)
     
 
-content_image = load_img(content_path)
-style_image = load_img(style_path)
-
-
-x = tf.keras.applications.vgg19.preprocess_input(content_image*255)
-x = tf.image.resize(x, (224, 224))
-vgg = tf.keras.applications.VGG19(include_top=False, weights='imagenet')
-
-content_layers = ['block5_conv2'] 
-
-style_layers = ['block1_conv1',
-                'block2_conv1',
-                'block3_conv1', 
-                'block4_conv1', 
-                'block5_conv1']
-
-num_content_layers = len(content_layers)
-num_style_layers = len(style_layers)
 
 def vgg_layers(layer_names):
   """ Creates a vgg model that returns a list of intermediate output values."""
@@ -129,17 +123,8 @@ def vgg_layers(layer_names):
 
   model = tf.keras.Model([vgg.input], outputs)
   return model
-style_extractor = vgg_layers(style_layers)
-style_outputs = style_extractor(style_image*255)
 
-#Look at the statistics of each layer's output
-# for name, output in zip(style_layers, style_outputs):
-#   print(name)
-#   print("  shape: ", output.numpy().shape)
-#   print("  min: ", output.numpy().min())
-#   print("  max: ", output.numpy().max())
-#   print("  mean: ", output.numpy().mean())
-#   print()
+
   
 def gram_matrix(input_tensor):
   result = tf.linalg.einsum('bijc,bijd->bcd', input_tensor, input_tensor)
@@ -176,53 +161,110 @@ class StyleContentModel(tf.keras.models.Model):
                   in zip(self.style_layers, style_outputs)}
 
     return {'content': content_dict, 'style': style_dict}
-  
-extractor = StyleContentModel(style_layers, content_layers)
-
-results = extractor(tf.constant(content_image))
-
-# print('Styles:')
-# for name, output in sorted(results['style'].items()):
-#   print("  ", name)
-#   print("    shape: ", output.numpy().shape)
-#   print("    min: ", output.numpy().min())
-#   print("    max: ", output.numpy().max())
-#   print("    mean: ", output.numpy().mean())
-#   print()
-
-# print("Contents:")
-# for name, output in sorted(results['content'].items()):
-#   print("  ", name)
-#   print("    shape: ", output.numpy().shape)
-#   print("    min: ", output.numpy().min())
-#   print("    max: ", output.numpy().max())
-#   print("    mean: ", output.numpy().mean())
-
-style_targets = extractor(style_image)['style']
-content_targets = extractor(content_image)['content']
-
-image = tf.Variable(content_image)
 
 def clip_0_1(image):
   return tf.clip_by_value(image, clip_value_min=0.0, clip_value_max=1.0)
 
-opt = tf.optimizers.Adam(learning_rate=0.02, beta_1=0.99, epsilon=1e-1)
 
-style_weight=1e-2
-content_weight=1e3
 
-def style_content_loss(outputs):
-    style_outputs = outputs['style']
-    content_outputs = outputs['content']
-    style_loss = tf.add_n([tf.reduce_mean((style_outputs[name]-style_targets[name])**2) 
-                           for name in style_outputs.keys()])
-    style_loss *= style_weight / num_style_layers
 
-    content_loss = tf.add_n([tf.reduce_mean((content_outputs[name]-content_targets[name])**2) 
-                             for name in content_outputs.keys()])
-    content_loss *= content_weight / num_content_layers
-    loss = style_loss + content_loss
-    return loss
+
+
+
+def stylize(style_image, content_image):
+    plt.subplot(1, 2, 1)
+    imshow(content_image, 'Content Image')
+
+    plt.subplot(1, 2, 2)
+    imshow(style_image, 'Style Image')
+    plt.show()
+    x = tf.keras.applications.vgg19.preprocess_input(content_image*255)
+    x = tf.image.resize(x, (224, 224))
+    vgg = tf.keras.applications.VGG19(include_top=False, weights='imagenet')
+
+    content_layers = ['block5_conv2'] 
+
+    style_layers = ['block1_conv1',
+                    'block2_conv1',
+                    'block3_conv1', 
+                    'block4_conv1', 
+                    'block5_conv1']
+
+    num_content_layers = len(content_layers)
+    num_style_layers = len(style_layers)
+
+    style_extractor = vgg_layers(style_layers)
+    style_outputs = style_extractor(style_image*255)
+    
+    extractor = StyleContentModel(style_layers, content_layers)
+
+    results = extractor(tf.constant(content_image))
+
+    style_targets = extractor(style_image)['style']
+    content_targets = extractor(content_image)['content']
+
+    image = tf.Variable(content_image)
+
+    opt = tf.optimizers.Adam(learning_rate=0.02, beta_1=0.99, epsilon=1e-1)
+
+    style_weight=1e-3
+    content_weight=1e3
+
+    def style_content_loss(outputs):
+        style_outputs = outputs['style']
+        content_outputs = outputs['content']
+        style_loss = tf.add_n([tf.reduce_mean((style_outputs[name]-style_targets[name])**2) 
+                            for name in style_outputs.keys()])
+        style_loss *= style_weight / num_style_layers
+
+        content_loss = tf.add_n([tf.reduce_mean((content_outputs[name]-content_targets[name])**2) 
+                                for name in content_outputs.keys()])
+        content_loss *= content_weight / num_content_layers
+        loss = style_loss + content_loss
+        return loss
+
+
+
+    total_variation_weight = 25
+
+    def total_variation_loss(image):
+        x_deltas, y_deltas = high_pass_x_y(image)
+        return tf.reduce_sum(tf.abs(x_deltas)) + tf.reduce_sum(tf.abs(y_deltas))
+    
+    @tf.function()
+    def train_step(image):
+        with tf.GradientTape() as tape:
+            outputs = extractor(image)
+            loss = style_content_loss(outputs)
+            loss += total_variation_weight * total_variation_loss(image)
+
+        grad = tape.gradient(loss, image)
+        opt.apply_gradients([(grad, image)])
+        image.assign(clip_0_1(image))
+
+
+    start = time.time()
+
+    epochs = 3
+    steps_per_epoch = 100
+
+    step = 0
+    for n in range(epochs):
+        for m in range(steps_per_epoch):
+            step += 1
+            train_step(image)
+            print(".", end='', flush=True)
+        # display.clear_output(wait=True)
+        # plt.imshow(tensor_to_image(image))
+        # plt.show()
+        # imshow(tensor_to_image(image))
+        print("Train step: {}".format(step))   
+
+    end = time.time()
+    print("Total time: {:.1f}".format(end-start))
+    return image
+        
+
 
 def high_pass_x_y(image):
   x_var = image[:, :, 1:, :] - image[:, :, :-1, :]
@@ -230,54 +272,16 @@ def high_pass_x_y(image):
 
   return x_var, y_var
 
-def total_variation_loss(image):
-  x_deltas, y_deltas = high_pass_x_y(image)
-  return tf.reduce_sum(tf.abs(x_deltas)) + tf.reduce_sum(tf.abs(y_deltas))
-
-total_variation_weight = 30
-
-@tf.function()
-def train_step(image):
-  with tf.GradientTape() as tape:
-    outputs = extractor(image)
-    loss = style_content_loss(outputs)
-    loss += total_variation_weight * total_variation_loss(image)
-
-  grad = tape.gradient(loss, image)
-  opt.apply_gradients([(grad, image)])
-  image.assign(clip_0_1(image))
-
-start = time.time()
-
-epochs = 10
-steps_per_epoch = 100
-
-step = 0
-for n in range(epochs):
-  for m in range(steps_per_epoch):
-    step += 1
-    train_step(image)
-    print(".", end='', flush=True)
-  display.clear_output(wait=True)
-  plt.imshow(tensor_to_image(image))
-  plt.show()
-  # imshow(tensor_to_image(image))
-  print("Train step: {}".format(step))
-    
-
-end = time.time()
-print("Total time: {:.1f}".format(end-start))
 
 
-if __name__ == "main.py":
-  plt.subplot(1, 2, 1)
-  imshow(content_image, 'Content Image')
-
-  plt.subplot(1, 2, 2)
-  imshow(style_image, 'Style Image')
-  plt.show()
-  
+if __name__ == "__main__":
+  content_path = "./style_transfer/shangchi.png"
+  style_path = "./style_transfer/diobrando.jpg"
   bounds = face_boxes(content_path)
-  stylized_image = bb_style_face(style_image, content_image, bounds)
+  stylized_image = bb_style_face(style_path, content_path, bounds)
   plt.imshow(tensor_to_image(stylized_image))
   plt.show()
+
+
+
+

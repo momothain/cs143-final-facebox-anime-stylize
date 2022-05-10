@@ -58,10 +58,13 @@ def face_boxes(image_filepath):
   
 def bb_style_face(style_image_path, target_image_path, bounds):
    style_image = load_img(style_image_path)
-   target_image = cv2.imread(target_image_path)
+   target_image = tf.io.read_file(target_image_path)
+   target_image = tf.image.decode_image(target_image, channels=3)
+   target_image = tf.image.convert_image_dtype(target_image, tf.float32)
    box_cut = preprocess_img(target_image[bounds[0][1]:bounds[0][3], bounds[0][0]:bounds[0][2], :])
    styled_box = stylize(style_image, box_cut)
-   new_image = np.asarray(tensor_to_image(tf.image.convert_image_dtype(cv2.imread(target_image_path), tf.float32)), dtype=np.float32)
+   # TODO: fix below line so that it doesn't show up as disgusting bg
+   new_image = np.array(target_image)
    new_image[bounds[0][1]:bounds[0][3], bounds[0][0]:bounds[0][2], :] = tf.image.resize(styled_box, (abs(bounds[0][1]-bounds[0][3]), abs(bounds[0][0]-bounds[0][2])))
    return new_image
  
@@ -245,7 +248,7 @@ def stylize(style_image, content_image):
 
     start = time.time()
 
-    epochs = 3
+    epochs = 5
     steps_per_epoch = 100
 
     step = 0
@@ -275,7 +278,7 @@ def high_pass_x_y(image):
 
 
 if __name__ == "__main__":
-  content_path = "./style_transfer/shangchi.png"
+  content_path = "./style_transfer/rock.jpg"
   style_path = "./style_transfer/diobrando.jpg"
   bounds = face_boxes(content_path)
   stylized_image = bb_style_face(style_path, content_path, bounds)

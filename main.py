@@ -311,5 +311,9 @@ if __name__ == "__main__":
     # filename = 'New Content Image.jpg'
     # cv2.imwrite(filename, tensor_to_image(content_image))
 
-    plt.imshow(tensor_to_image(content_image))
+    final = tensor_to_image(content_image)
+    plt.imshow(final)
     plt.show()
+
+    filename = 'Final Image.jpg'
+    cv2.imwrite(filename, final)

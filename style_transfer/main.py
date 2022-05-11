@@ -63,10 +63,24 @@ def face_boxes_mtcnn(image_filepath):
     directory = r'cs143-final-facebox-anime-stylize/face_test/results'
     os.chdir(directory)
     # to draw faces on image
+
+    face_boxes = []
+    # # print(faces)
+    # # to draw faces on image
+    # for i in range(faces.shape[2]):
+    #     confidence = faces[0, 0, i, 2]
+    #     if confidence > 0.5:
+    #         box = faces[0, 0, i, 3:7] * np.array([w, h, w, h])
+    #         box = box.astype("int")
+    #         (x, y, x1, y1) = box
+    #         im = cv2.rectangle(im, (x, y), (x1, y1), (0, 0, 255), 2)
+    #         face_boxes.append(box)
+
     for result in faces:
         x, y, w, h = result['box']
         x1, y1 = x + w, y + h
         cv2.rectangle(img, (x, y), (x1, y1), (0, 0, 255), 2)
+        face_boxes.append('box')
 
     filename = 'facebox_mtcnn.jpg'
     cv2.imwrite(filename, img)
@@ -76,6 +90,7 @@ def face_boxes_mtcnn(image_filepath):
     waitKey(0)
     # close the window
     destroyAllWindows()
+    return face_boxes
 
 
 def bb_style_face(style_image_path, target_image, bounds):
@@ -290,7 +305,7 @@ def high_pass_x_y(image):
 
 
 if __name__ == "__main__":
-    style_path = "cs143-final-facebox-anime-stylize\style_transfer\mikasa.png"
+    style_path = "cs143-final-facebox-anime-stylize\style_transfer/mikasa.png"
     content_path = "cs143-final-facebox-anime-stylize\style_transfer/test2.jpg"
 
     content_image = tf.io.read_file(content_path)

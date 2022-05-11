@@ -1,6 +1,5 @@
 import os
 import tensorflow as tf
-import IPython.display as display
 
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -56,16 +55,13 @@ def face_boxes(image_filepath):
     destroyAllWindows()
     return face_boxes
   
-def bb_style_face(style_image_path, target_image_path, bounds):
+def bb_style_face(style_image_path, target_image, bounds):
    style_image = load_img(style_image_path)
-   target_image = tf.io.read_file(target_image_path)
-   target_image = tf.image.decode_image(target_image, channels=3)
-   target_image = tf.image.convert_image_dtype(target_image, tf.float32)
-   box_cut = preprocess_img(target_image[bounds[0][1]:bounds[0][3], bounds[0][0]:bounds[0][2], :])
+   box_cut = preprocess_img(target_image[bounds[1]:bounds[3], bounds[0]:bounds[2], :])
    styled_box = stylize(style_image, box_cut)
    # TODO: fix below line so that it doesn't show up as disgusting bg
    new_image = np.array(target_image)
-   new_image[bounds[0][1]:bounds[0][3], bounds[0][0]:bounds[0][2], :] = tf.image.resize(styled_box, (abs(bounds[0][1]-bounds[0][3]), abs(bounds[0][0]-bounds[0][2])))
+   new_image[bounds[1]:bounds[3], bounds[0]:bounds[2], :] = tf.image.resize(styled_box, (abs(bounds[1]-bounds[3]), abs(bounds[0]-bounds[2])))
    return new_image
  
 def tensor_to_image(tensor):
@@ -257,10 +253,6 @@ def stylize(style_image, content_image):
             step += 1
             train_step(image)
             print(".", end='', flush=True)
-        # display.clear_output(wait=True)
-        # plt.imshow(tensor_to_image(image))
-        # plt.show()
-        # imshow(tensor_to_image(image))
         print("Train step: {}".format(step))   
 
     end = time.time()
@@ -278,11 +270,16 @@ def high_pass_x_y(image):
 
 
 if __name__ == "__main__":
-  content_path = "./style_transfer/rock.jpg"
-  style_path = "./style_transfer/diobrando.jpg"
+  style_path = "./style_transfer/mikasa.png"
+  content_path = "./style_transfer/test2.jpg"
+
+  content_image = tf.io.read_file(content_path)
+  content_image = tf.image.decode_image(content_image, channels=3)
+  content_image = tf.image.convert_image_dtype(content_image, tf.float32)
   bounds = face_boxes(content_path)
-  stylized_image = bb_style_face(style_path, content_path, bounds)
-  plt.imshow(tensor_to_image(stylized_image))
+  for bound in bounds:
+    content_image = bb_style_face(style_path, content_image, bound)
+  plt.imshow(tensor_to_image(content_image))
   plt.show()
 
 

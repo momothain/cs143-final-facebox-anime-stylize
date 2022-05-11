@@ -17,8 +17,8 @@ np.random.seed(7)
 
 
 def face_boxes_dnn(image_filepath):
-    modelFile = "dnn_model/res10_300x300_ssd_iter_140000.caffemodel"
-    configFile = "dnn_model/deploy.prototxt"
+    modelFile = "cs143-final-facebox-anime-stylize/face_test/res10_300x300_ssd_iter_140000.caffemodel"
+    configFile = "cs143-final-facebox-anime-stylize/face_test\deploy.prototxt"
     net = cv2.dnn.readNetFromCaffe(configFile, modelFile)  # readNetFromCaffe
 
     im = cv2.imread(image_filepath)
@@ -60,27 +60,25 @@ def face_boxes_mtcnn(image_filepath):
     detector = MTCNN()
     img = cv2.imread(image_filepath)
     faces = detector.detect_faces(img)  # result
-    # directory = r'cs143-final-facebox-anime-stylize/face_test/results'
-    # os.chdir(directory)
+    directory = r'cs143-final-facebox-anime-stylize/face_test/results'
+    os.chdir(directory)
     # to draw faces on image
 
     face_boxes = []
     for result in faces:
         x, y, w, h = result['box']
         x1, y1 = x + w, y + h
-        box = (x, y, x1, y1)
         cv2.rectangle(img, (x, y), (x1, y1), (0, 0, 255), 2)
-        face_boxes.append(box)
+        face_boxes.append('box')
 
-    writepath = 'results/facebox_mtcnn.jpg'
-    cv2.imwrite(writepath, img)
+    filename = 'facebox_mtcnn.jpg'
+    cv2.imwrite(filename, img)
 
     cv2.imshow('face_test_boxes', img)
     # keep the window open until we press a key
     waitKey(0)
     # close the window
     destroyAllWindows()
-    print(face_boxes)
     return face_boxes
 
 
@@ -296,8 +294,8 @@ def high_pass_x_y(image):
 
 
 if __name__ == "__main__":
-    style_path = 'images/mikasa.png'
-    content_path = "images/test2.jpg"
+    style_path = 'cs143-final-facebox-anime-stylize\style_transfer\mikasa.png'
+    content_path = "cs143-final-facebox-anime-stylize\style_transfer/test2.jpg"
 
     content_image = tf.io.read_file(content_path)
     content_image = tf.image.decode_image(content_image, channels=3)

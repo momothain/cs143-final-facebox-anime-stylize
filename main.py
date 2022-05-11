@@ -297,7 +297,7 @@ def high_pass_x_y(image):
 
 if __name__ == "__main__":
     style_path = 'images/mikasa.png'
-    content_path = "images/test2.jpg"
+    content_path = "images/shangchi.png"
 
     content_image = tf.io.read_file(content_path)
     content_image = tf.image.decode_image(content_image, channels=3)
@@ -315,5 +315,5 @@ if __name__ == "__main__":
     plt.imshow(final)
     plt.show()
 
-    filename = 'Final Image.jpg'
-    cv2.imwrite(filename, final)
+    filename = 'results\Final_Image.jpg'
+    final.save(filename)
